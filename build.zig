@@ -20,16 +20,30 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    if (target.query.isNativeOs() and target.query.os_tag == .linux) {
-        exe.linkSystemLibrary("SDL2");
-        exe.linkLibC();
-    } else {
-        const sdl_dep = b.dependency("SDL", .{
-            .optimize = .ReleaseFast,
-            .target = target,
-        });
-        exe.linkLibrary(sdl_dep.artifact("SDL2"));
-    }
+    exe.linkSystemLibrary("SDL2"); // Link SDL2 library
+    exe.linkSystemLibrary("SDL2_image"); // Link SDL_image library
+    exe.linkLibC();
+
+    // Todo understand how to link the dep between sdl and sdl_image
+    // if (target.query.isNativeOs() and target.query.os_tag == .linux) {
+    //     exe.linkSystemLibrary("SDL2"); // Link SDL2 library
+    //     exe.linkSystemLibrary("SDL2_image"); // Link SDL_image library
+    //     exe.linkLibC();
+    // } else {
+    //     const sdl_dep = b.dependency("SDL", .{
+    //         .optimize = .ReleaseFast,
+    //         .target = target,
+    //     });
+    //     const sdl_image_dep = b.dependency("SDL_image", .{
+    //         .optimize = .ReleaseFast,
+    //         .target = target,
+    //     });
+    //     exe.addIncludePath(sdl_dep.path("include")); // Add SDL2 directory
+    //     exe.addIncludePath(sdl_image_dep.path("include"));
+
+    //     exe.linkLibrary(sdl_dep.artifact("SDL2")); // Link SDL2 library
+    //     exe.linkLibrary(sdl_image_dep.artifact("SDL2_image")); // Link SDL_image library
+    // }
 
     b.installArtifact(exe);
 
@@ -42,24 +56,4 @@ pub fn build(b: *std.Build) void {
 
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
-
-    const lib_unit_tests = b.addTest(.{
-        .root_source_file = b.path("src/root.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
-
-    const exe_unit_tests = b.addTest(.{
-        .root_source_file = b.path("src/main.zig"),
-        .target = target,
-        .optimize = optimize,
-    });
-
-    const run_exe_unit_tests = b.addRunArtifact(exe_unit_tests);
-
-    const test_step = b.step("test", "Run unit tests");
-    test_step.dependOn(&run_lib_unit_tests.step);
-    test_step.dependOn(&run_exe_unit_tests.step);
 }

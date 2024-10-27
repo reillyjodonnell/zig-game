@@ -1,6 +1,8 @@
 const c = @cImport({
-    @cInclude("SDL2/SDL.h");
+    @cInclude("SDL2/SDL.h"); // Import core SDL
+    @cInclude("SDL2/SDL_image.h"); // Import SDL_image
 });
+const std = @import("std");
 const assert = @import("std").debug.assert;
 
 pub fn main() !void {
@@ -10,36 +12,35 @@ pub fn main() !void {
     }
     defer c.SDL_Quit();
 
-    const screen = c.SDL_CreateWindow("The Port", c.SDL_WINDOWPOS_UNDEFINED, c.SDL_WINDOWPOS_UNDEFINED, 400, 140, (c.SDL_WINDOW_OPENGL | c.SDL_WINDOW_RESIZABLE)) orelse {
+    if (c.IMG_Init(c.IMG_INIT_PNG) == 0) {
+        c.SDL_Log("Unable to initialize SDL_image: %s", c.SDL_GetError());
+        return error.ImageInitializationFailed;
+    }
+    defer c.IMG_Quit();
+
+    const screen = c.SDL_CreateWindow("zig game", c.SDL_WINDOWPOS_UNDEFINED, c.SDL_WINDOWPOS_UNDEFINED, 400, 140, (c.SDL_WINDOW_OPENGL | c.SDL_WINDOW_RESIZABLE)) orelse {
         c.SDL_Log("Unable to create window: %s", c.SDL_GetError());
         return error.SDLInitializationFailed;
     };
     defer c.SDL_DestroyWindow(screen);
 
-    const renderer = c.SDL_CreateRenderer(screen, -1, 0) orelse {
+    const renderer = c.SDL_CreateRenderer(screen, -1, c.SDL_RENDERER_ACCELERATED) orelse {
         c.SDL_Log("Unable to create renderer: %s", c.SDL_GetError());
         return error.SDLInitializationFailed;
     };
-    defer c.SDL_DestroyRenderer(renderer);
 
-    const zig_bmp = @embedFile("zig.bmp");
-    const rw = c.SDL_RWFromConstMem(zig_bmp, zig_bmp.len) orelse {
-        c.SDL_Log("Unable to get RWFromConstMem: %s", c.SDL_GetError());
-        return error.SDLInitializationFailed;
+    const lettuce_surface = c.IMG_Load("src/lettuce.png") orelse {
+        c.SDL_Log("Unable to load png: %s", c.SDL_GetError());
+        return error.ImageLoadFailed;
     };
-    defer assert(c.SDL_RWclose(rw) == 0);
 
-    const zig_surface = c.SDL_LoadBMP_RW(rw, 0) orelse {
-        c.SDL_Log("Unable to load bmp: %s", c.SDL_GetError());
-        return error.SDLInitializationFailed;
-    };
-    defer c.SDL_FreeSurface(zig_surface);
+    defer c.SDL_FreeSurface(lettuce_surface);
 
-    const zig_texture = c.SDL_CreateTextureFromSurface(renderer, zig_surface) orelse {
+    const lettuce_texture = c.SDL_CreateTextureFromSurface(renderer, lettuce_surface) orelse {
         c.SDL_Log("Unable to create texture from surface: %s", c.SDL_GetError());
         return error.SDLInitializationFailed;
     };
-    defer c.SDL_DestroyTexture(zig_texture);
+    defer c.SDL_DestroyTexture(lettuce_texture);
 
     var quit = false;
     while (!quit) {
@@ -54,7 +55,7 @@ pub fn main() !void {
         }
 
         _ = c.SDL_RenderClear(renderer);
-        _ = c.SDL_RenderCopy(renderer, zig_texture, null, null);
+        _ = c.SDL_RenderCopy(renderer, lettuce_texture, null, null);
         c.SDL_RenderPresent(renderer);
 
         c.SDL_Delay(17);

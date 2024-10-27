@@ -4,12 +4,6 @@ run `zig fetch --save git+https://github.com/allyourcodebase/sdl#main`
 
 ## To run on mac:
 
-`brew install sdl2`
-
-## To run on linux:
-
-`sudo apt-get install libsdl2-dev`
-
-## To run on windows:
-
-https://www.libsdl.org/download-2.0.php
+`brew install sdl2 sdl2_image watchexec`
+then
+`watchexec -e zig -r -- zig build` and run the executable
